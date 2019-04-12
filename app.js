@@ -9,11 +9,16 @@
 //    a standard variable to be used 
 
 // assigning value to "process.env.*" can used in "nodeon.json"
-
 const path = require('path');
+const fs = require('fs');
+const https = require('https');
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
+
 
 const session = require('express-session');
 const mongoStore = require('connect-mongodb-session')(session);
@@ -29,6 +34,8 @@ const shopController = require('./controllers/shop');
 const User = require('./models/user');
 const { mongoKey } = require('./config/key' );
 
+// console.log(process.env.NODE_ENV)
+
 const app = express();
 const Mongo_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@firstatlas-drwhc.mongodb.net/shop`;
 
@@ -37,7 +44,17 @@ const store = new mongoStore({
   collection: 'sessions'
 });
 
+
 const csrfProtection = csrf();
+
+// For SSL, get the private key.
+// It must be sycn 
+// because without key file, it generates an error and sopts here.
+// const privateKey = fs.readFileSync('server.key');
+
+// // to get public key
+// const certificate = fs.readFileSync('server.cert');
+
 const fileStorage = multer.diskStorage({ 
   destination: (req, file, cb) => {
     cb(null, 'images');
@@ -65,6 +82,45 @@ app.set('views', 'views');
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
 const authRoutes = require('./routes/auth');
+
+// we do not to see logs from morgan and then record logs in the file
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, 'access.log'), {
+    flags: 'a' // a: appendant to continuously add the logs
+  })
+  
+
+
+
+// before app.use(bodyParser)
+// In the browser, and network console
+//  we can find header like
+/* 
+Strict-Transport-Security: max-age=15552000; includeSubDomains
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: SAMEORIGIN
+X-XSS-Protection: 1; mode=block
+
+*/
+
+// So by using helmet we can enclose sensitive info
+//  in the header provided vy helmet.
+app.use(helmet());
+
+
+// To compress files except for image file.
+// It is very useful we need to send css files and so on.
+// The many hosting servers use this comression!
+app.use(compression());
+
+// to find the logs easily
+// It has different options but here we just use 'combined'
+// stream: only when we want to create a log file
+//  instead when we directly find the log in the terminal
+app.use(morgan('combined', {stream: accessLogStream}));
+
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(multer({ storage: fileStorage, fileFilter: fileFilter }).single('image'))
@@ -133,7 +189,17 @@ mongoose
   .connect(Mongo_URI, { useNewUrlParser: true })
   .then(() => {
     console.log('Server is up!');
+    // http to the https
     app.listen(process.env.PORT || 3000);
+    
+    // Configuration
+    // the first: private key
+    // the second: req to get certification key
+    // https.createServer({
+    //   key: privateKey,
+    //   cert: certificate
+    // }, app)
+    // .listen(process.env.PORT || 3000);
   })
   .catch(err => {
     console.log(err);

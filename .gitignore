@@ -7,3 +7,6 @@ images/
 email.txt
 error_playground.json
 upload_download.txt
+server.cert
+server.key
+deployment.txt
