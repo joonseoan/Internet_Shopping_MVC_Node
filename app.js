@@ -11,7 +11,7 @@
 // assigning value to "process.env.*" can used in "nodeon.json"
 const path = require('path');
 const fs = require('fs');
-const https = require('https');
+// const https = require('https');
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
@@ -32,7 +32,7 @@ const { get404 } = require('./controllers/error');
 const isAuth = require('./middleware/is-auth');
 const shopController = require('./controllers/shop');
 const User = require('./models/user');
-const { mongoKey } = require('./config/key' );
+// const { mongoKey } = require('./config/key' );
 
 // console.log(process.env.NODE_ENV)
 
@@ -121,13 +121,21 @@ app.use(compression());
 //  instead when we directly find the log in the terminal
 app.use(morgan('combined', {stream: accessLogStream}));
 
-
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(multer({ storage: fileStorage, fileFilter: fileFilter }).single('image'))
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use(session({ secret: 'asfasdfsafdsa', resave: false, saveUninitialized: false, store }));
 app.use(flash());
+
+app.use((req, res, next) => {
+  if (req.originalUrl === '/favicon.ico') {
+    res.status(204).json({ nope: true });
+  } else {
+    next();
+  }
+})
+
 app.use((req, res, next) => {
   res.locals.isAuthenticated = req.session.isAuthenticated;
   next();
