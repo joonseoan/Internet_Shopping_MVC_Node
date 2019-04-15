@@ -17,13 +17,13 @@ const sendgridTransport = require('nodemailer-sendgrid-transport');
 const { validationResult } = require('express-validator/check');
 
 
-const { seng_grid } = require('../config/key');
+// const { seng_grid } = require('../config/key');
 
 // nodemailer encloses integrate / encloses sendgrid
 const transporter = nodeMailer.createTransport(sendgridTransport({
     auth: {
         // api_user: ,
-        api_key: seng_grid
+        api_key: process.env.SEND_GRID
     }
 }));
 
